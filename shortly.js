@@ -3,6 +3,8 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -17,6 +19,8 @@ var app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
+app.use(cookieParser('Shhhhh, very secret'));
+app.use(session());
 // Parse JSON (uniform resource locators)
 app.use(bodyParser.json());
 // Parse forms (signup/login)
@@ -90,11 +94,16 @@ app.get('/signup', function(req, res){
 app.post('/login', function(req, res){
   new User({ username: req.body.username}).fetch().then(function(found){
     if (!found){
-      console.log("User not found, redirecting to signup")
-      res.redirect('/signup');
+      console.log('Hi');
+      res.render('faillogin');
     } else {
-      bcrypt.compare(req.body.password, found.get('password'), function(err, res){
-        console.log(res);
+      bcrypt.compare(req.body.password, found.get('password'), function(err, result){
+        if (result){
+          req.session.regenerate(function(){
+            req.session.user = req.body.username;
+            res.redirect('/');
+          })
+        }
       });
     }
   })
@@ -108,15 +117,14 @@ app.post('/signup', function(req, res){
           var user = new User({ username: req.body.username, password: hash})
           user.save().then(function(newUser){
             Users.add(newUser);
-            res.send(200, 'User Added!');
+            res.redirect('/');
           });
         } else {
           console.log(err);
         }
       })
     } else {
-      console.log("User found, redirecting to login");
-      res.redirect('/login');
+      res.render('failsignup');
     }
   })
 });
