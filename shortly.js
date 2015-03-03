@@ -87,6 +87,12 @@ app.get('/signup', function(req, res){
   res.render('signup');
 })
 
+app.get('/logout', function(req, res){
+  req.session.destroy(function(){
+    res.redirect('/login');
+  });
+})
+
 app.post('/login',
 function(req, res){
   new User({ username: req.body.username }).fetch().then(function(found){
