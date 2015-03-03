@@ -41,7 +41,7 @@ function(req, res) {
   });
 });
 
-app.post('/links',
+app.post('/links', restrict,
 function(req, res) {
   var uri = req.body.url;
 
@@ -87,23 +87,31 @@ app.get('/signup', function(req, res){
   res.render('signup');
 })
 
-app.post('/login', function(req, res){
-  new User({ username: req.body.username, password: req.body.password }).fetch().then(function(found){
-    if (found){
-      req.session.regenerate(function(){
-        req.session.user = req.body.username;
-        res.redirect('/');
+app.post('/login',
+function(req, res){
+  new User({ username: req.body.username }).fetch().then(function(found){
+    if(found){
+      bcrypt.compare(req.body.password, found.get('password'), function(err, result){
+        if(result){
+          req.session.regenerate(function(){
+            req.session.user = req.body.username;
+            res.redirect('/');
+          });
+        } else {
+          res.redirect('/login');
+        }
       })
-    } else {
-      res.redirect('/login');
+    }else{
+      res.redirect('/login')
     }
   })
 })
 
-app.post('/signup', function(req, res){
+app.post('/signup', encrypt,
+function(req, res){
   new User({ username: req.body.username }).fetch().then(function(found){
     if (!found){
-      new User ({ username: req.body.username, password: req.body.password }).save().then(function(newUser){
+      new User ({ username: req.body.username, password: req.hash }).save().then(function(newUser){
         Users.add(newUser);
         res.redirect('/');
       });
@@ -117,6 +125,17 @@ function restrict(req, res, next){
   } else {
     res.redirect('/login');
   }
+}
+
+function encrypt(req, res, next){
+  bcrypt.hash(req.body.password, null, null, function(err, hash){
+    if (err){
+      console.log(err);
+    } else {
+      req.hash = hash;
+      next();
+    }
+  });
 }
 
 /************************************************************/
