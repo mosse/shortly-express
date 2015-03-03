@@ -104,11 +104,11 @@ function(req, res){
             res.redirect('/');
           });
         } else {
-          res.redirect('/login');
+          res.render('loginfail');
         }
       })
     }else{
-      res.redirect('/login')
+      res.render('loginfail')
     }
   })
 })
@@ -121,6 +121,8 @@ function(req, res){
         Users.add(newUser);
         res.redirect('/');
       });
+    } else {
+      res.render('signupfail');
     }
   })
 })
